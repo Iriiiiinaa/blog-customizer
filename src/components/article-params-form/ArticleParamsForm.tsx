@@ -16,52 +16,72 @@ import {
 	fontColors,
 	backgroundColors,
 	contentWidthArr,
+	OptionType,
 } from 'src/constants/articleProps';
 
 import styles from './ArticleParamsForm.module.scss';
 
 type ArticleParamsFormProps = {
-	onApply: (state: ArticleStateType) => void;
+	onChangeArticleState: (state: ArticleStateType) => void;
 };
 
-export const ArticleParamsForm = ({ onApply }: ArticleParamsFormProps) => {
-	const [isOpen, setIsOpen] = useState(false);
+export const ArticleParamsForm = ({
+	onChangeArticleState,
+}: ArticleParamsFormProps) => {
+	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 	const handleToggle = () => {
-		setIsOpen((prev) => !prev);
+		setIsSidebarOpen((prev) => !prev);
 	};
 	const asideRef = useRef<HTMLElement | null>(null);
+	const arrowButtonRef = useRef<HTMLDivElement | null>(null);
 	const [formState, setFormState] = useState(defaultArticleState);
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		onApply(formState);
+		onChangeArticleState(formState);
 	};
 	const handleReset = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		setFormState(defaultArticleState);
-		onApply(defaultArticleState);
+		onChangeArticleState(defaultArticleState);
 	};
+	const handleFieldChange =
+		(field: keyof ArticleStateType) => (selected: OptionType) => {
+			setFormState((prevState) => ({
+				...prevState,
+				[field]: selected,
+			}));
+		};
 
 	useEffect(() => {
+		if (!isSidebarOpen) {
+			return;
+		}
+
 		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				asideRef.current &&
-				!asideRef.current.contains(event.target as Node)
-			) {
-				setIsOpen(false);
+			const target = event.target as Node;
+			const isClickInsideAside = asideRef.current?.contains(target);
+			const isClickOnArrowButton = arrowButtonRef.current?.contains(target);
+			if (!isClickInsideAside && !isClickOnArrowButton) {
+				setIsSidebarOpen(false);
 			}
 		};
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => {
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, []);
+	}, [isSidebarOpen]);
 
 	return (
 		<>
-			<ArrowButton isOpen={isOpen} onClick={handleToggle} />
+			<div ref={arrowButtonRef}>
+				<ArrowButton isOpen={isSidebarOpen} onClick={handleToggle} />
+			</div>
 			<aside
 				ref={asideRef}
-				className={clsx(styles.container, isOpen && styles.container_open)}>
+				className={clsx(
+					styles.container,
+					isSidebarOpen && styles.container_open
+				)}>
 				<form
 					className={styles.form}
 					onSubmit={handleSubmit}
@@ -73,12 +93,7 @@ export const ArticleParamsForm = ({ onApply }: ArticleParamsFormProps) => {
 						title='Шрифт'
 						options={fontFamilyOptions}
 						selected={formState.fontFamilyOption}
-						onChange={(selected) =>
-							setFormState({
-								...formState,
-								fontFamilyOption: selected,
-							})
-						}
+						onChange={handleFieldChange('fontFamilyOption')}
 					/>
 
 					<RadioGroup
@@ -86,24 +101,14 @@ export const ArticleParamsForm = ({ onApply }: ArticleParamsFormProps) => {
 						title='Размер шрифта'
 						options={fontSizeOptions}
 						selected={formState.fontSizeOption}
-						onChange={(selected) =>
-							setFormState({
-								...formState,
-								fontSizeOption: selected,
-							})
-						}
+						onChange={handleFieldChange('fontSizeOption')}
 					/>
 
 					<Select
 						title='Цвет шрифта'
 						options={fontColors}
 						selected={formState.fontColor}
-						onChange={(selected) =>
-							setFormState({
-								...formState,
-								fontColor: selected,
-							})
-						}
+						onChange={handleFieldChange('fontColor')}
 					/>
 
 					<Separator />
@@ -112,24 +117,14 @@ export const ArticleParamsForm = ({ onApply }: ArticleParamsFormProps) => {
 						title='Цвет фона'
 						options={backgroundColors}
 						selected={formState.backgroundColor}
-						onChange={(selected) =>
-							setFormState({
-								...formState,
-								backgroundColor: selected,
-							})
-						}
+						onChange={handleFieldChange('backgroundColor')}
 					/>
 
 					<Select
 						title='Ширина контента'
 						options={contentWidthArr}
 						selected={formState.contentWidth}
-						onChange={(selected) =>
-							setFormState({
-								...formState,
-								contentWidth: selected,
-							})
-						}
+						onChange={handleFieldChange('contentWidth')}
 					/>
 
 					<div className={styles.bottomContainer}>
